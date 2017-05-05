@@ -155,3 +155,57 @@ class DotProductAttentionLayer(lasagne.layers.MergeLayer):
             alpha = alpha * inputs[2]
             alpha = alpha / alpha.sum(axis=1).reshape((alpha.shape[0], 1))
         return T.sum(inputs[0] * alpha.dimshuffle(0, 1, 'x'), axis=1)
+
+
+class BilinearDotLayer(lasagne.layers.MergeLayer):
+    """
+        A bilinear attention layer.
+        incomings[0]: batch x len x h
+        incomings[1]: batch x h
+    """
+    def __init__(self, incomings, num_units,
+                 mask_input=None,
+                 init=lasagne.init.Uniform(), **kwargs):
+        if len(incomings) != 2:
+            raise NotImplementedError
+        if mask_input is not None:
+            incomings.append(mask_input)
+        super(BilinearDotLayer, self).__init__(incomings, **kwargs)
+        self.num_units = num_units
+        self.W = self.add_param(init, (self.num_units, self.num_units), name='W_bilinear')
+
+    def get_output_shape_for(self, input_shapes):
+        return input_shapes[0][:2]
+
+    def get_output_for(self, inputs, **kwargs):
+
+        # inputs[0]: batch * len * h
+        # inputs[1]: batch * h
+        # W: h * h
+        M = T.dot(inputs[1], self.W).dimshuffle(0, 'x', 1)  # batch * 1 * h
+        alpha = T.nnet.softmax(T.sum(inputs[0] * M, axis=2))  # batch * len
+        return alpha
+
+
+class BilinearDotLayerTensor(lasagne.layers.MergeLayer):
+    """
+        A bilinear attention layer.
+        incomings[0]: batch x len x h
+        incomings[1]: batch x len x h
+    """
+    def __init__(self, incomings, num_units,
+                 mask_input=None,
+                 init=lasagne.init.Uniform(), **kwargs):
+        if len(incomings) != 2:
+            raise NotImplementedError
+        if mask_input is not None:
+            incomings.append(mask_input)
+        super(BilinearDotLayerTensor, self).__init__(incomings, **kwargs)
+        self.num_units = num_units
+
+    def get_output_shape_for(self, input_shapes):
+        return input_shapes[0][:2]
+
+    def get_output_for(self, inputs, **kwargs):
+        alpha = T.nnet.softmax(T.sum(inputs[0] * inputs[1], axis=2))
+        return alpha

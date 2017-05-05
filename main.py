@@ -167,9 +167,10 @@ def build_fn(args, embeddings):
     else:
         raise NotImplementedError('att_func = %s' % args.att_func)
 
-    answer_att = nn_layers.BilinearAttentionLayer([answer, att], args.rnn_output_size)
-    network = lasagne.layers.DenseLayer(answer_att, args.num_labels,
-                                        nonlinearity=lasagne.nonlinearities.softmax)
+    # answer_att = nn_layers.BilinearAttentionLayer([answer, att], args.rnn_output_size)
+    # network = lasagne.layers.DenseLayer(answer_att, args.num_labels,
+    #                                     nonlinearity=lasagne.nonlinearities.softmax)
+    network = nn_layers.BilinearDotLayer([answer, att], args.rnn_output_size)
 
     if args.pre_trained is not None:
         dic = utils.load_params(args.pre_trained)
